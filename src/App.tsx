@@ -38,7 +38,7 @@ const RHFileUploader = () => {
 
       return (
         <>
-          <Select style={{ width: 200 }} onBlur={field.onBlur} options={options} mode="multiple" />
+          <Select style={{ width: 200 }} onBlur={field.onBlur} value={options} options={options} mode="multiple" placeholder="선택하시요" tagRender={tagRender} />
           <label htmlFor="hello">
             파일 선택
           </label>
