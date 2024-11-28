@@ -1,5 +1,5 @@
 import { Select, Tag } from "antd";
-import { useForm, Controller, FormProvider, FieldValues } from "react-hook-form";
+import { useForm, Controller, FormProvider, FieldValues, useFormContext } from "react-hook-form";
 import { DevTool } from "@hookform/devtools";
 import { ChangeEventHandler, FC, MouseEventHandler, PropsWithChildren, ReactNode } from "react";
 
@@ -35,18 +35,38 @@ const FileSelectButton: FC<PropsWithChildren<{htmlFor: string}>> = ({ children, 
 
 const makeFileID = (file: File) => `${file.name}_${file.lastModified}`
 
-const FileSelect: FC<{field: FieldValues}> = ({ field }) => {
-  const dataTransfer = createDataTransfer(field.value || new DataTransfer().files)
+const makeFileOptions = (fileList: FileList = new DataTransfer().files) => {
+  const dataTransfer = createDataTransfer(fileList)
   const files = Array.from(dataTransfer.files)
-  const options = files.map(file => {
+  
+  return files.map(file => {
     return {
       label: file.name,
       value: makeFileID(file),
     }
   })
+}
+
+const useRemoveFile = (field: FieldValues) => {
+  return (value: string) => {
+    const dataTransfer = createDataTransfer(field.value)
+    const files = Array.from(dataTransfer.files)
+    const index = files.findIndex(file => makeFileID(file) === value)
+    if (index < 0) {
+      return;
+    }
+
+    dataTransfer.items.remove(index)
+    field.onChange(dataTransfer.files)
+  }
+}
+
+const FileSelect: FC<{field: FieldValues}> = ({ field }) => {
+  const onRemove = useRemoveFile(field)
+  const options = makeFileOptions(field.value)
 
   return (
-    <Select 
+    <Select
         style={{ width: '360px', height: '32px' }} 
         onBlur={field.onBlur} 
         value={options} 
@@ -55,13 +75,8 @@ const FileSelect: FC<{field: FieldValues}> = ({ field }) => {
         placeholder="선택하시요"
         maxTagCount={2}
         maxTagTextLength={10}
-        tagRender={tagRender({ onClose: (value) => {
-          const index = files.findIndex(file => makeFileID(file) === value)
-          if (index >= 0) {
-            dataTransfer.items.remove(index)
-            field.onChange(dataTransfer.files)
-          }
-        }})}
+        tagRender={tagRender({ onClose: onRemove })}
+        onDeselect={(value) => onRemove(value as unknown as string)}
       />
   )
 }
@@ -74,10 +89,9 @@ const createDataTransfer = (fileList: FileList) => {
 }
 
 const FielInput: FC<{field: FieldValues, id: string}> = ({ field, id }) => {
-  const dataTransfer = createDataTransfer(field.value || new DataTransfer().files)
+  
   const onChange: ChangeEventHandler<HTMLInputElement> = (e) => {
-    dataTransfer.items.clear()
-    Array.from(e.currentTarget.files|| []).forEach(file => dataTransfer.items.add(file));
+    const dataTransfer = createDataTransfer(e.currentTarget.files || new DataTransfer().files)
     field.onChange(dataTransfer.files);
   }
 
