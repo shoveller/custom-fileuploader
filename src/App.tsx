@@ -1,7 +1,7 @@
 import { Select, Tag } from "antd";
-import { useForm, Controller, FormProvider } from "react-hook-form";
+import { useForm, Controller, FormProvider, FieldValues } from "react-hook-form";
 import { DevTool } from "@hookform/devtools";
-import { FC, MouseEventHandler, PropsWithChildren, ReactNode } from "react";
+import { ChangeEventHandler, FC, MouseEventHandler, PropsWithChildren, ReactNode } from "react";
 
 type FileTagProps = {
   label: ReactNode;
@@ -35,48 +35,79 @@ const FileSelectButton: FC<PropsWithChildren<{htmlFor: string}>> = ({ children, 
 
 const makeFileID = (file: File) => `${file.name}_${file.lastModified}`
 
-const RHFileUploader = () => {
+const FileSelect: FC<{field: FieldValues}> = ({ field }) => {
+  const dataTransfer = createDataTransfer(field.value || new DataTransfer().files)
+  const files = Array.from(dataTransfer.files)
+  const options = files.map(file => {
+    return {
+      label: file.name,
+      value: makeFileID(file),
+    }
+  })
+
   return (
-    <Controller name="test" render={({ field }) => {
-      const dataTransfer = new DataTransfer()
-      const fileList = (field.value || new DataTransfer().files) as FileList
-      Array.from(fileList).forEach(file => dataTransfer.items.add(file));
+    <Select 
+        style={{ width: '360px', height: '32px' }} 
+        onBlur={field.onBlur} 
+        value={options} 
+        options={options} 
+        mode="multiple" 
+        placeholder="선택하시요"
+        maxTagCount={2}
+        maxTagTextLength={10}
+        tagRender={tagRender({ onClose: (value) => {
+          const index = files.findIndex(file => makeFileID(file) === value)
+          if (index >= 0) {
+            dataTransfer.items.remove(index)
+            field.onChange(dataTransfer.files)
+          }
+        }})}
+      />
+  )
+}
 
-      const options = Array.from(fileList).map(file => {
-        return {
-          label: file.name,
-          value: makeFileID(file),
-        }
-      })
+const createDataTransfer = (fileList: FileList) => {
+  const dataTransfer = new DataTransfer()
+  Array.from(fileList).forEach(file => dataTransfer.items.add(file));
 
+  return dataTransfer
+}
+
+const FielInput: FC<{field: FieldValues, id: string}> = ({ field, id }) => {
+  const dataTransfer = createDataTransfer(field.value || new DataTransfer().files)
+  const onChange: ChangeEventHandler<HTMLInputElement> = (e) => {
+    dataTransfer.items.clear()
+    Array.from(e.currentTarget.files|| []).forEach(file => dataTransfer.items.add(file));
+    field.onChange(dataTransfer.files);
+  }
+
+  return (
+    <input 
+        style={{ display: 'none' }} 
+        type="file" 
+        id={id} 
+        name={field.name}
+        onBlur={field.onBlur} 
+        ref={field.ref} 
+        multiple={true} 
+        onChange={onChange}  
+    />
+  )
+}
+
+const RHFileUploader: FC<{ name: string, id: string }> = ({ name, id }) => {
+  return (
+    <Controller name={name} render={({ field }) => {
       return (
         <>
-          <Select 
-            style={{ width: 200 }} 
-            onBlur={field.onBlur} 
-            value={options} 
-            options={options} 
-            mode="multiple" 
-            placeholder="선택하시요" 
-            tagRender={tagRender({ onClose: (value) => {
-              const index = Array.from(fileList).findIndex(file => makeFileID(file) === value)
-              if (index >= 0) {
-                dataTransfer.items.remove(index)
-                field.onChange(dataTransfer.files)
-              }
-            } })} 
-          />
-          <FileSelectButton htmlFor="hello">
+          <FileSelect field={field} />
+          <FileSelectButton htmlFor={id}>
             파일 선택
           </FileSelectButton>
-          <input style={{ display: 'none' }} type="file" id="hello" name={field.name} onChange={(e) => {
-            dataTransfer.items.clear()
-            Array.from(e.currentTarget.files|| []).forEach(file => dataTransfer.items.add(file));
-            field.onChange(dataTransfer.files);
-          }} onBlur={field.onBlur} ref={field.ref} multiple={true} />
+          <FielInput id={id} field={field} />
         </>
-      )
-    }} />
+      )}} 
+    />
   )
 }
 
@@ -86,7 +117,7 @@ function App() {
   return (
     <FormProvider {...methods}>
       <form onSubmit={methods.handleSubmit(console.log, console.log)}>
-        <RHFileUploader />
+        <RHFileUploader id="hello" name="test" />
         <button type="submit">서브밋</button>
         <button type="reset">리셋</button>
       </form>
