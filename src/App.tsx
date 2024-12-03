@@ -1,7 +1,7 @@
 import { Select, Tag } from "antd";
-import { useForm, Controller, FormProvider, FieldValues, useFormContext } from "react-hook-form";
+import { useForm, Controller, FormProvider, FieldValues } from "react-hook-form";
 import { DevTool } from "@hookform/devtools";
-import { ChangeEventHandler, FC, MouseEventHandler, PropsWithChildren, ReactNode } from "react";
+import { ChangeEventHandler, CSSProperties, FC, MouseEventHandler, PropsWithChildren, ReactNode, useState } from "react";
 
 type FileTagProps = {
   label: ReactNode;
@@ -12,16 +12,27 @@ type FileTagProps = {
   isMaxTag: boolean;
 };
 
-const tagRender = ({ onClose }:{onClose: (value: string) => void}) => ({ label, value }: FileTagProps) => {
+const tagRender = ({ onClose, onMaxTagClose }:{onClose: (value: string) => void, onMaxTagClose: () => void}) => ({ label, value, isMaxTag, ...rest }: FileTagProps) => {
   const onMouseDown: MouseEventHandler<HTMLSpanElement> = (e) => {
     e.preventDefault();
     e.stopPropagation();
   };
 
+  if (isMaxTag) {
+    return (
+      <Tag
+        onMouseDown={onMouseDown}
+        onClick={onMaxTagClose}
+      >
+        더보기
+      </Tag>
+    );
+  }
+
   return (
     <Tag
       onMouseDown={onMouseDown}
-      closable={true}
+      closable
       onClose={() =>onClose(value)}
     >
       {label}
@@ -29,8 +40,18 @@ const tagRender = ({ onClose }:{onClose: (value: string) => void}) => ({ label, 
   );
 };
 
+const buttonStyle: CSSProperties = {
+  borderRadius: 8,
+  border: '1px solid transparent',
+  padding: '0.6em 1.2em',
+  fontSize: '1em',
+  fontWeight: 500,
+  backgroundColor: '#1a1a1a',
+  transition: 'border-color 0.25s'
+}
+
 const FileSelectButton: FC<PropsWithChildren<{htmlFor: string}>> = ({ children, htmlFor }) => {
-  return <label htmlFor={htmlFor}>{children}</label>
+  return <label htmlFor={htmlFor} style={buttonStyle}>{children}</label>
 }
 
 const makeFileID = (file: File) => `${file.name}_${file.lastModified}`
@@ -61,22 +82,36 @@ const useRemoveFile = (field: FieldValues) => {
   }
 }
 
+const useDropDownOpen = () => {
+  const [open, setOpen] = useState(false);
+  const openDropdown = () => setOpen(true)
+
+  return { open, setOpen, openDropdown }
+}
+
 const FileSelect: FC<{field: FieldValues}> = ({ field }) => {
   const onRemove = useRemoveFile(field)
   const options = makeFileOptions(field.value)
+  const { open, setOpen, openDropdown } = useDropDownOpen()
+  
 
   return (
     <Select
-        style={{ width: '360px', height: '32px' }} 
-        onBlur={field.onBlur} 
-        value={options} 
-        options={options} 
-        mode="multiple" 
-        placeholder="선택하시요"
-        maxTagCount={2}
-        maxTagTextLength={10}
-        tagRender={tagRender({ onClose: onRemove })}
-        onDeselect={(value) => onRemove(value as unknown as string)}
+      open={open}
+      onDropdownVisibleChange={setOpen}
+      style={{ width: '400px', height: '32px' }} 
+      onBlur={field.onBlur} 
+      value={options} 
+      options={options} 
+      mode="multiple" 
+      placeholder="파일을 선택하여 첨부해 주세요"
+      maxTagCount={2}
+      maxTagTextLength={10}
+      tagRender={tagRender({ onClose: onRemove, onMaxTagClose: openDropdown })}
+      maxTagPlaceholder={(omittedValues) => {
+        return <>+{omittedValues.length}개 더 있음</>
+      }}
+      onDeselect={(value) => onRemove(value as unknown as string)}
       />
   )
 }
@@ -131,9 +166,13 @@ function App() {
   return (
     <FormProvider {...methods}>
       <form onSubmit={methods.handleSubmit(console.log, console.log)}>
-        <RHFileUploader id="hello" name="test" />
-        <button type="submit">서브밋</button>
-        <button type="reset">리셋</button>
+      <RHFileUploader id="hello" name="test" />
+        <div>
+          <button type="submit">서브밋</button>
+          <button type="button" onClick={() => methods.reset({
+            test: new DataTransfer().files
+          })}>리셋</button>
+        </div>
       </form>
       <DevTool control={methods.control} />
     </FormProvider>
