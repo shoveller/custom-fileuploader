@@ -3,20 +3,19 @@ import { Controller } from "react-hook-form"
 import FileSelect from "./FileSelect"
 import FileSelectButton from "./FileSelectButton"
 import FielInput from "./FielInput"
+import RHFileUploaderContextProvider, { RHFileUploaderContextProps } from "./RHFileUploaderContext"
 
-type RHFileUploaderProps = { name: string, id: string, maxFiles?: number }
-
-const RHFileUploader: FC<RHFileUploaderProps> = ({ name, id }) => {
+const RHFileUploader: FC<RHFileUploaderContextProps> = (props) => {
     return (
-        <Controller name={name} render={({ field }) => {
+        <Controller name={props.name} render={({ field }) => {
             return (
-                <>
+                <RHFileUploaderContextProvider value={props} >
                     <FileSelect field={field} />
-                    <FileSelectButton htmlFor={id}>
+                    <FileSelectButton htmlFor={props.id}>
                     파일 선택
                     </FileSelectButton>
-                    <FielInput id={id} field={field} />
-                </>
+                    <FielInput id={props.id} field={field} />
+                </RHFileUploaderContextProvider>
             )}} 
         />
     )
