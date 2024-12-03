@@ -134,17 +134,14 @@ const FielInput: FC<{field: FieldValues, id: string}> = ({ field, id }) => {
   
   const onChange: ChangeEventHandler<HTMLInputElement> = (e) => {
     const files = e.currentTarget.files || new DataTransfer().files;
-    const currentFiles = field.value ? Array.from(field.value as FileList) : [];
-    const newFiles = Array.from(files);
 
     const maxFiles = 5;
-    // 현재 파일과 새로 추가할 파일을 합쳐서 최대 갯수만큼 자르기
-    const allFiles = currentFiles.concat(newFiles).slice(0, maxFiles);
+    if (files.length > maxFiles) {
+      alert(`최대 ${maxFiles}개의 파일만 첨부할 수 있습니다.`)
+      return
+    }
 
-    const dataTransfer = new DataTransfer();
-    allFiles.forEach(file => dataTransfer.items.add(file));
-
-    field.onChange(dataTransfer.files);
+    field.onChange(files);
   }
 
   return (
