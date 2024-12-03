@@ -11,6 +11,8 @@
     "deploy": "pnpm build && gh-pages -d dist"
   },
   "dependencies": {
+    "@hookform/error-message": "^2.0.1",
+    "@hookform/resolvers": "^3.9.1",
     "@types/lodash-es": "^4.17.12",
     "antd": "^5.22.2",
     "gh-pages": "^6.2.0",

@@ -1,10 +1,13 @@
 import './App.css'
 import { Select, Tag } from "antd";
-import { useForm, Controller, FormProvider, FieldValues } from "react-hook-form";
+import { useForm, Controller, FormProvider, FieldValues, useFormContext } from "react-hook-form";
 import { DevTool } from "@hookform/devtools";
-import { ChangeEventHandler, CSSProperties, FC, MouseEventHandler, PropsWithChildren, ReactNode } from "react";
+import { ChangeEventHandler, createContext, CSSProperties, FC, MouseEventHandler, PropsWithChildren, ReactNode } from "react";
 import { uniqBy } from 'lodash-es'
 import { useId } from 'react'
+import { z } from 'zod'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { ErrorMessage } from '@hookform/error-message'
 
 type FileTagProps = {
   label: ReactNode;
@@ -109,7 +112,8 @@ const createDataTransfer = (fileList: FileList) => {
   return dataTransfer
 }
 
-const useOnFileChange = (field: FieldValues) => {
+const useOnFileChange = <T extends FieldValues>(field: FieldValues) => {
+  const { setError, clearErrors } = useFormContext<T>();
   const prevFileList = (field.value || new DataTransfer().files) as FileList
   const prevFileDatas = Array.from(prevFileList).map((file) => {
     return {
@@ -129,10 +133,15 @@ const useOnFileChange = (field: FieldValues) => {
 
     const maxFiles = 5;
     if (fileDatas.length > maxFiles) {
-      alert(`최대 ${maxFiles}개의 파일만 첨부할 수 있습니다.`)
-      return
+      setError(field.name, {
+        type: 'maxFiles',
+        message: `최대 ${maxFiles}개의 파일만 첨부할 수 있습니다.`
+      });
+      e.target.value = ''; // input 초기화
+      return;
     }
 
+    clearErrors(field.name);
     const files = fileDatas.map(data => data.file)
     field.onChange(files);
     
@@ -160,7 +169,11 @@ const FielInput: FC<{field: FieldValues, id: string}> = ({ field, id }) => {
   )
 }
 
-const RHFileUploader: FC<{ name: string, id: string }> = ({ name, id }) => {
+type RHFileUploaderType = { name: string, id: string, maxFiles?: number }
+
+// const rHFileUploaderContext = createContext<RHFileUploaderType | null>(null)
+
+const RHFileUploader: FC<RHFileUploaderType> = ({ name, id, maxFiles }) => {
   return (
     <Controller name={name} render={({ field }) => {
       return (
@@ -176,13 +189,26 @@ const RHFileUploader: FC<{ name: string, id: string }> = ({ name, id }) => {
   )
 }
 
+const schema = z.object({
+  test: z.instanceof(FileList).refine(
+    (files) => files.length <= 5,
+    {
+      message: "최대 5개의 파일만 업로드할 수 있습니다.",
+      params: { maxFiles: 5 }
+    }
+  )
+})
+
 function App() {
-  const methods = useForm();
+  const methods = useForm({
+    resolver: zodResolver(schema)
+  });
 
   return (
     <FormProvider {...methods}>
       <form onSubmit={methods.handleSubmit(console.log, console.log)}>
       <RHFileUploader id="hello" name="test" />
+      <ErrorMessage name='test' errors={methods.formState.errors} />
         <div>
           <button type="submit">서브밋</button>
           <button type="button" onClick={() => methods.reset({
