@@ -135,7 +135,10 @@ const useOnFileChange = (field: FieldValues) => {
 
     const files = fileDatas.map(data => data.file)
     field.onChange(files);
+    
+    e.target.value = '';
   }
+  
 
   return onChange
 }
