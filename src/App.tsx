@@ -3,7 +3,8 @@ import { Select, Tag } from "antd";
 import { useForm, Controller, FormProvider, FieldValues } from "react-hook-form";
 import { DevTool } from "@hookform/devtools";
 import { ChangeEventHandler, CSSProperties, FC, MouseEventHandler, PropsWithChildren, ReactNode } from "react";
-import { uniqWith, isEqual } from 'lodash-es'
+import { uniqWith, uniqBy } from 'lodash-es'
+import { useId } from 'react'
 
 type FileTagProps = {
   label: ReactNode;
@@ -19,20 +20,12 @@ const tagRender = ({ onClose }:{onClose: (value: string) => void}) => ({ label, 
     e.preventDefault();
     e.stopPropagation();
   };
-
-  // if (isMaxTag) {
-  //   return (
-  //     <Tag
-  //       onMouseDown={onMouseDown}
-  //       onClick={onMaxTagClose}
-  //     >
-  //       더보기
-  //     </Tag>
-  //   );
-  // }
+  const id = useId()
+  const key = `${value}_${id}`
 
   return (
     <Tag
+      key={key}
       onMouseDown={onMouseDown}
       closable
       onClose={() =>onClose(value)}
@@ -132,15 +125,15 @@ const useOnFileChange = (field: FieldValues) => {
         file
       }
     })
-    const fileDats = uniqWith([...prevFileDatas, ...newFileDatas], isEqual);
+    const fileDatas = uniqBy([...prevFileDatas, ...newFileDatas], 'id');
 
     const maxFiles = 5;
-    if (fileDats.length > maxFiles) {
+    if (fileDatas.length > maxFiles) {
       alert(`최대 ${maxFiles}개의 파일만 첨부할 수 있습니다.`)
       return
     }
 
-    const files = fileDats.map(data => data.file)
+    const files = fileDatas.map(data => data.file)
     field.onChange(files);
   }
 
