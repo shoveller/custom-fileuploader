@@ -3,6 +3,7 @@ import { Select, Tag } from "antd";
 import { useForm, Controller, FormProvider, FieldValues } from "react-hook-form";
 import { DevTool } from "@hookform/devtools";
 import { ChangeEventHandler, CSSProperties, FC, MouseEventHandler, PropsWithChildren, ReactNode } from "react";
+import { uniqWith, isEqual } from 'lodash-es'
 
 type FileTagProps = {
   label: ReactNode;
@@ -83,24 +84,14 @@ const useRemoveFile = (field: FieldValues) => {
   }
 }
 
-// const useDropDownOpen = () => {
-//   const [open, setOpen] = useState(false);
-//   const openDropdown = () => setOpen(true)
-
-//   return { open, setOpen, openDropdown }
-// }
-
 const FileSelect: FC<{field: FieldValues}> = ({ field }) => {
   const onRemove = useRemoveFile(field)
   const options = makeFileOptions(field.value)
-  // const { open, setOpen, openDropdown } = useDropDownOpen()
   
-
   return (
     <Select
       open={false}
       suffixIcon={false}
-      // onDropdownVisibleChange={setOpen}
       style={{ 
         width: '400px', 
         height: 'auto',
@@ -112,12 +103,7 @@ const FileSelect: FC<{field: FieldValues}> = ({ field }) => {
       options={options}
       mode="multiple" 
       placeholder="파일을 선택하여 첨부해 주세요"
-      // maxTagCount={2}
-      // maxTagTextLength={10}
       tagRender={tagRender({ onClose: onRemove })}
-      // maxTagPlaceholder={(omittedValues) => {
-      //   return <>+{omittedValues.length}개 더 있음</>
-      // }}
       onDeselect={(value) => onRemove(value as unknown as string)}
       />
   )
@@ -130,19 +116,39 @@ const createDataTransfer = (fileList: FileList) => {
   return dataTransfer
 }
 
-const FielInput: FC<{field: FieldValues, id: string}> = ({ field, id }) => {
-  
+const useOnFileChange = (field: FieldValues) => {
+  const prevFileList = (field.value || new DataTransfer().files) as FileList
+  const prevFileDatas = Array.from(prevFileList).map((file) => {
+    return {
+      id: makeFileID(file),
+      file
+    }
+  })
   const onChange: ChangeEventHandler<HTMLInputElement> = (e) => {
-    const files = e.currentTarget.files || new DataTransfer().files;
+    const newFileList = e.currentTarget.files || new DataTransfer().files;
+    const newFileDatas = Array.from(newFileList).map((file) => {
+      return {
+        id: makeFileID(file),
+        file
+      }
+    })
+    const fileDats = uniqWith([...prevFileDatas, ...newFileDatas], isEqual);
 
     const maxFiles = 5;
-    if (files.length > maxFiles) {
+    if (fileDats.length > maxFiles) {
       alert(`최대 ${maxFiles}개의 파일만 첨부할 수 있습니다.`)
       return
     }
 
+    const files = fileDats.map(data => data.file)
     field.onChange(files);
   }
+
+  return onChange
+}
+
+const FielInput: FC<{field: FieldValues, id: string}> = ({ field, id }) => {
+  const onChange = useOnFileChange(field)
 
   return (
     <input 
