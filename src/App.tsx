@@ -1,7 +1,8 @@
+import './App.css'
 import { Select, Tag } from "antd";
 import { useForm, Controller, FormProvider, FieldValues } from "react-hook-form";
 import { DevTool } from "@hookform/devtools";
-import { ChangeEventHandler, CSSProperties, FC, MouseEventHandler, PropsWithChildren, ReactNode, useState } from "react";
+import { ChangeEventHandler, CSSProperties, FC, MouseEventHandler, PropsWithChildren, ReactNode } from "react";
 
 type FileTagProps = {
   label: ReactNode;
@@ -12,7 +13,7 @@ type FileTagProps = {
   isMaxTag: boolean;
 };
 
-const tagRender = ({ onClose }:{onClose: (value: string) => void, onMaxTagClose: () => void}) => ({ label, value }: FileTagProps) => {
+const tagRender = ({ onClose }:{onClose: (value: string) => void}) => ({ label, value }: FileTagProps) => {
   const onMouseDown: MouseEventHandler<HTMLSpanElement> = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -82,24 +83,30 @@ const useRemoveFile = (field: FieldValues) => {
   }
 }
 
-const useDropDownOpen = () => {
-  const [open, setOpen] = useState(false);
-  const openDropdown = () => setOpen(true)
+// const useDropDownOpen = () => {
+//   const [open, setOpen] = useState(false);
+//   const openDropdown = () => setOpen(true)
 
-  return { open, setOpen, openDropdown }
-}
+//   return { open, setOpen, openDropdown }
+// }
 
 const FileSelect: FC<{field: FieldValues}> = ({ field }) => {
   const onRemove = useRemoveFile(field)
   const options = makeFileOptions(field.value)
-  const { open, setOpen, openDropdown } = useDropDownOpen()
+  // const { open, setOpen, openDropdown } = useDropDownOpen()
   
 
   return (
     <Select
-      open={open}
-      onDropdownVisibleChange={setOpen}
-      style={{ width: '400px', height: 'auto' }} 
+      open={false}
+      suffixIcon={false}
+      // onDropdownVisibleChange={setOpen}
+      style={{ 
+        width: '400px', 
+        height: 'auto',
+        background: 'transparent',  // Select 자체의 배경
+      }} 
+      className="transparent-select"
       onBlur={field.onBlur} 
       value={options} 
       options={options}
@@ -107,7 +114,7 @@ const FileSelect: FC<{field: FieldValues}> = ({ field }) => {
       placeholder="파일을 선택하여 첨부해 주세요"
       // maxTagCount={2}
       // maxTagTextLength={10}
-      tagRender={tagRender({ onClose: onRemove, onMaxTagClose: openDropdown })}
+      tagRender={tagRender({ onClose: onRemove })}
       // maxTagPlaceholder={(omittedValues) => {
       //   return <>+{omittedValues.length}개 더 있음</>
       // }}
