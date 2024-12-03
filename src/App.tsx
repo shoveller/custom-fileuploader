@@ -18,16 +18,16 @@ const tagRender = ({ onClose, onMaxTagClose }:{onClose: (value: string) => void,
     e.stopPropagation();
   };
 
-  if (isMaxTag) {
-    return (
-      <Tag
-        onMouseDown={onMouseDown}
-        onClick={onMaxTagClose}
-      >
-        더보기
-      </Tag>
-    );
-  }
+  // if (isMaxTag) {
+  //   return (
+  //     <Tag
+  //       onMouseDown={onMouseDown}
+  //       onClick={onMaxTagClose}
+  //     >
+  //       더보기
+  //     </Tag>
+  //   );
+  // }
 
   return (
     <Tag
@@ -99,18 +99,18 @@ const FileSelect: FC<{field: FieldValues}> = ({ field }) => {
     <Select
       open={open}
       onDropdownVisibleChange={setOpen}
-      style={{ width: '400px', height: '32px' }} 
+      style={{ width: '400px', height: 'auto' }} 
       onBlur={field.onBlur} 
       value={options} 
-      options={options} 
+      options={options}
       mode="multiple" 
       placeholder="파일을 선택하여 첨부해 주세요"
-      maxTagCount={2}
-      maxTagTextLength={10}
+      // maxTagCount={2}
+      // maxTagTextLength={10}
       tagRender={tagRender({ onClose: onRemove, onMaxTagClose: openDropdown })}
-      maxTagPlaceholder={(omittedValues) => {
-        return <>+{omittedValues.length}개 더 있음</>
-      }}
+      // maxTagPlaceholder={(omittedValues) => {
+      //   return <>+{omittedValues.length}개 더 있음</>
+      // }}
       onDeselect={(value) => onRemove(value as unknown as string)}
       />
   )
@@ -126,7 +126,17 @@ const createDataTransfer = (fileList: FileList) => {
 const FielInput: FC<{field: FieldValues, id: string}> = ({ field, id }) => {
   
   const onChange: ChangeEventHandler<HTMLInputElement> = (e) => {
-    const dataTransfer = createDataTransfer(e.currentTarget.files || new DataTransfer().files)
+    const files = e.currentTarget.files || new DataTransfer().files;
+    const currentFiles = field.value ? Array.from(field.value as FileList) : [];
+    const newFiles = Array.from(files);
+
+    const maxFiles = 5;
+    // 현재 파일과 새로 추가할 파일을 합쳐서 최대 갯수만큼 자르기
+    const allFiles = currentFiles.concat(newFiles).slice(0, maxFiles);
+
+    const dataTransfer = new DataTransfer();
+    allFiles.forEach(file => dataTransfer.items.add(file));
+
     field.onChange(dataTransfer.files);
   }
 
