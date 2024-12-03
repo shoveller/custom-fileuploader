@@ -1,7 +1,8 @@
-import { Select, Tag } from "antd"
-import { FC, MouseEventHandler, ReactNode, useId } from "react";
+import { Select } from "antd"
+import { FC } from "react";
 import { FieldValues } from "react-hook-form"
 import makeFileID from "./makeFileID";
+import FileTag from "./FileTag";
 
 const makeFileOptions = (fileList: FileList = new DataTransfer().files) => {
     const dataTransfer = createDataTransfer(fileList)
@@ -36,35 +37,6 @@ const useRemoveFile = (field: FieldValues) => {
     }
   }
 
-type FileTagProps = {
-    label: ReactNode;
-    value: string;
-    disabled: boolean;
-    onClose: (event?: React.MouseEvent<HTMLElement, MouseEvent>) => void;
-    closable: boolean;
-    isMaxTag: boolean;
-};
-
-const tagRender = ({ onClose }:{onClose: (value: string) => void}) => ({ label, value }: FileTagProps) => {
-    const onMouseDown: MouseEventHandler<HTMLSpanElement> = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-    };
-    const id = useId()
-    const key = `${value}_${id}`
-  
-    return (
-      <Tag
-        key={key}
-        onMouseDown={onMouseDown}
-        closable
-        onClose={() =>onClose(value)}
-      >
-        {label}
-      </Tag>
-    );
-  };
-
 type FileSelectProps = {field: FieldValues}
 
 const FileSelect: FC<FileSelectProps> = ({ field }) => {
@@ -86,9 +58,15 @@ const FileSelect: FC<FileSelectProps> = ({ field }) => {
         options={options}
         mode="multiple" 
         placeholder="파일을 선택하여 첨부해 주세요"
-        tagRender={tagRender({ onClose: onRemove })}
+        tagRender={({ value, label }) => {
+            return (
+                <FileTag onClose={() => onRemove(value)}>
+                    {label}
+                </FileTag>
+            )
+        }}
         onDeselect={(value) => onRemove(value as unknown as string)}
-        />
+      />
     )
   }
 
