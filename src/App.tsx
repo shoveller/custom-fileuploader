@@ -12,7 +12,7 @@ type FileTagProps = {
   isMaxTag: boolean;
 };
 
-const tagRender = ({ onClose, onMaxTagClose }:{onClose: (value: string) => void, onMaxTagClose: () => void}) => ({ label, value, isMaxTag, ...rest }: FileTagProps) => {
+const tagRender = ({ onClose, onMaxTagClose }:{onClose: (value: string) => void, onMaxTagClose: () => void}) => ({ label, value, isMaxTag }: FileTagProps) => {
   const onMouseDown: MouseEventHandler<HTMLSpanElement> = (e) => {
     e.preventDefault();
     e.stopPropagation();
